@@ -27,6 +27,14 @@ clear_map() {
   done
 }
 
+setpos() { 
+  local xpos=$1
+  local ypos=$2
+  local symbol=$3
+  map[$j + $i * $xsize]=${symbol:1:1}
+}
+
+
 
 draw() {
   tput home
@@ -57,6 +65,7 @@ setup() {
   stty -echo
   tput civis
   clear_map
+  game_setup
   clear
 }
 
