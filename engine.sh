@@ -29,7 +29,7 @@ clear_map() {
 
 
 draw() {
-  clear
+  tput home
   for ((i=0; i < $ysize; i++ )); do
     line=''
     for ((j=0; j < $xsize; j++ )); do
@@ -50,6 +50,7 @@ setup() {
   stty -echo
   tput civis
   clear_map
+  clear
 }
 
 engine() {
