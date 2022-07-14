@@ -46,6 +46,13 @@ close() {
   exit
 }
 
+end() {
+  tput cnorm
+  stty echo
+  tput cup $ysize 0
+  exit
+}
+
 setup() {
   stty -echo
   tput civis
