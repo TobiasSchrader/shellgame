@@ -1,0 +1,66 @@
+#!/bin/bash
+#
+# Author: Tobias Schrader
+set -o nounset
+
+source engine.sh
+
+debug=false
+prg=$(basename "$0")
+
+while getopts ':d' optname; do
+  case $optname in
+    d) debug=true;;
+    :) echo "$prg: Argument for option $OPTARG is missing" >&2; exit 2;;
+    \?) echo "$prg: Unknown option $OPTARG" >&2; exit 2;;
+    *) echo "$prg: Internal error, unexpected option $OPTNAME" >&2; exit 3;;
+  esac
+done
+shift $(( $OPTIND - 1 ))
+
+declare -i score=0
+declare canMove=true
+declare decrease=0
+xsize=$(tput cols)
+ysize=$(($(tput lines) - 1 ))
+
+#declare fieldsize=$((xsize * ysize ))
+
+action() {
+  local playerinput=$1
+  case $playerinput in
+    q) close ;;
+    +) chscore 1  ;;
+    -) chscore -1  ;;
+  esac
+}
+
+chscore() {
+  $canMove && ((score+=$1))
+  canMove=false
+}
+
+build_map() {
+  clear_map
+  for ((i=0; i<${#score}; i++ )); do
+    map[$i]=${score:$i:1}
+  done
+  for (( i=$xsize; i<$xsize+$score; i++ )); do
+    map[$i]="+"
+  done
+}
+
+counteract() {
+  ((decrease+=20))
+  $debug && echo $decrease >&2
+  [[ $decrease -ge 100 ]] && ((score-- , decrease-=100))
+}
+
+worldtick() {
+  ((gametime++))
+  counteract
+  build_map
+  canMove=true
+}
+
+engine

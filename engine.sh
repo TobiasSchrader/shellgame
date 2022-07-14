@@ -17,21 +17,44 @@ tick() {
 declare -a map
 
 : ${xsize:=$(tput cols)}
-: ${ysize:=$(tput lines)}
+: ${ysize:=$(($(tput lines) - 1))}
+
+clear_map() {
+  for ((i=0; i < $ysize; i++ )); do
+    for ((j=0; j < $xsize; j++ )); do
+      map[$j + $i * $xsize]=' '
+    done
+  done
+}
+
 
 draw() {
   clear
   for ((i=0; i < $ysize; i++ )); do
+    line=''
     for ((j=0; j < $xsize; j++ )); do
-      echo -n "${map[ $j + $i * $xsize ]}"
+      line+="${map[ $j + $i * $xsize ]}"
     done
-    echo
+    echo "$line"
   done
 }
 
+close() {
+  tput cnorm
+  stty echo
+  clear
+  exit
+}
+
+setup() {
+  stty -echo
+  tput civis
+  clear_map
+}
+
 engine() {
+  setup
   while true; do
-    $debug && echo $EPOCHREALTIME $nexttick
     waittime=$nexttick-${EPOCHREALTIME/[.,]/}
     [[ $waittime -le 0 ]] && tick
     waittime=$nexttick-${EPOCHREALTIME/[.,]/}
@@ -40,7 +63,6 @@ engine() {
     else
       readwait=0
     fi
-    $debug && echo $readwait
     read -s -n 1 -t $readwait input && action "$input"
   done
 }
