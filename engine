@@ -16,7 +16,6 @@ done
 shift $(expr $OPTIND - 1)
 
 declare -i gametime=0
-declare -i lasttick=0
 declare -i nexttick=${EPOCHREALTIME/[.,]/}
 declare -i tickrate=1000000
 declare -i waittime=$tickrate
@@ -28,7 +27,6 @@ action() {
 }
 
 tick() {
-  lasttick=$nexttick
   nexttick+=$tickrate
   worldtick
   #draw
