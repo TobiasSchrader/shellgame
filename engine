@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Author: Tobias Schrader
+
+debug=false
+prg=$(basename "$0")
+
+while getopts ':d' optname; do
+  case $optname in
+    d) debug=true;;
+    :) echo "$prg: Argument for option $OPTARG is missing" >&2; exit 2;;
+    \?) echo "$prg: Unknown option $OPTARG" >&2; exit 2;;
+    *) echo "$prg: Internal error, unexpected option $OPTNAME" >&2; exit 3;;
+  esac
+done
+shift $(expr $OPTIND - 1)
+
+declare -i gametime=0
+declare -i lasttick=0
+declare -i nexttick=${EPOCHREALTIME/[.,]/}
+declare -i tickrate=1000000
+declare -i waittime=$tickrate
+
+action() {
+  local playerinput=$1
+  [[ $playerinput = q ]] && exit
+  [[ $playerinput = s ]] && sleep 2
+}
+
+tick() {
+  lasttick=$nexttick
+  nexttick+=$tickrate
+  worldtick
+  #draw
+  waittime=$tickrate
+}
+
+worldtick() {
+  ((gametime++))
+  echo $EPOCHREALTIME $gametime
+}
+
+draw() {
+echo "$gametime" "${playerinput@Q}"
+}
+
+####### MAIN ######
+
+while true; do
+  $debug && echo $EPOCHREALTIME $nexttick
+  waittime=$nexttick-${EPOCHREALTIME/[.,]/}
+  echo $waittime
+  [[ $waittime -le 0 ]] && tick
+  read -s -n 1 -t 0.5 input && action "$input"
+done
