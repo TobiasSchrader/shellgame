@@ -4,8 +4,13 @@
 
 declare -i gametime=0
 declare -i nexttick=${EPOCHREALTIME/[.,]/}
-declare -i tickrate=100000
+declare -i tickrate=50000
 declare -i waittime=$tickrate
+
+
+log() {
+  echo $@ > engine.log
+}
 
 tick() {
   nexttick+=$tickrate
@@ -65,7 +70,7 @@ setup() {
   stty -echo
   tput civis
   clear_map
-  game_setup
+  type game_setup 2> /dev/null && game_setup
   clear
 }
 
@@ -78,8 +83,9 @@ engine() {
     if [[ $waittime -gt 0 ]]; then
       printf -v readwait '0.%06d\n' $waittime
     else
-      readwait=0
+      readwait=0.05
     fi
+    log $readwait 
     read -s -n 1 -t $readwait input && action "$input"
   done
 }
