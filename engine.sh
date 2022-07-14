@@ -83,3 +83,5 @@ engine() {
     read -s -n 1 -t $readwait input && action "$input"
   done
 }
+
+trap 'end' 0
