@@ -4,7 +4,7 @@
 
 declare -i gametime=0
 declare -i nexttick=${EPOCHREALTIME/[.,]/}
-declare -i tickrate=500000
+declare -i tickrate=100000
 declare -i waittime=$tickrate
 
 tick() {
