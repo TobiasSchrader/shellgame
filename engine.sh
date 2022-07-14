@@ -3,19 +3,20 @@
 : ${debug:=false}
 
 declare -i gametime=0
-declare -i nexttick=${EPOCHREALTIME/[.,]/}
 declare -i tickrate=50000
 declare -i waittime=$tickrate
+declare -i lasttick=${EPOCHREALTIME/[.,]/}
+declare -i nexttick=${EPOCHREALTIME/[.,]/}
 
 
 log() {
-  echo $@ > engine.log
+  echo $@ >&2
 }
 
 tick() {
-  nexttick+=$tickrate
   worldtick
   draw
+  nexttick=$((${EPOCHREALTIME/[.,]/} + $tickrate))
   waittime=$tickrate
 }
 
@@ -77,15 +78,13 @@ setup() {
 engine() {
   setup
   while true; do
+  local pretick=${EPOCHREALTIME/[.,]/}
     waittime=$nexttick-${EPOCHREALTIME/[.,]/}
     [[ $waittime -le 0 ]] && tick
-    waittime=$nexttick-${EPOCHREALTIME/[.,]/}
-    if [[ $waittime -gt 0 ]]; then
-      printf -v readwait '0.%06d\n' $waittime
-    else
       readwait=0.05
-    fi
-    log $readwait 
+  local posttick=${EPOCHREALTIME/[.,]/}
+  log $posttick
+  log $((posttick - pretick))
     read -s -n 1 -t $readwait input && action "$input"
   done
 }
