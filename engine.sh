@@ -77,7 +77,7 @@ setup() {
 }
 
 engine() {
-  [[ $# -gt 0 ]] && [[ $1 == '--noautodraw' ]] && autodraw=false ; echo "Not drawing"
+  [[ $# -gt 0 ]] && [[ $1 == '--noautodraw' ]] && autodraw=false && echo "Not drawing"
   setup
   while true; do
     waittime=$nexttick-${EPOCHREALTIME/[.,]/}

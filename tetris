@@ -1,0 +1,144 @@
+#!/bin/bash
+#
+# Author: Tobias Schrader
+set -o nounset
+
+source engine.sh
+
+debug=false
+prg=$(basename "$0")
+
+while getopts ':d' optname; do
+  case $optname in
+    d) debug=true;;
+    :) echo "$prg: Argument for option $OPTARG is missing" >&2; exit 2;;
+    \?) echo "$prg: Unknown option $OPTARG" >&2; exit 2;;
+    *) echo "$prg: Internal error, unexpected option $OPTNAME" >&2; exit 3;;
+  esac
+done
+shift $(( $OPTIND - 1 ))
+
+# graphic representations
+declare -A rep
+rep[empty]=' '
+rep[border]='#'
+rep[falling]='@'
+rep[base]='0'
+
+declare -i tickrate=500000
+
+#field
+declare -i width=10
+declare -i height=20
+
+declare -i floor=$height-2
+declare -i xsize=$width+2
+declare -i ysize=$height+3
+
+declare -a field
+
+getfield() {
+  local x=$1
+  local y=$2
+  echo "${field[$x + $width * $y]}"
+}
+
+setfield() {
+  local x=$1
+  local y=$2
+  local val=$3
+  field[$x + $width * $y]=$val
+}
+
+
+
+#piece
+declare -i piece_x=$((width/2))
+declare -i piece_y=0
+
+forpiece() {
+  $1 piece_x piece_y $2
+}
+
+fall() {
+  if connects piece; then
+    land
+  else
+    move 0 1
+  fi
+}
+
+slide() {
+  local x=$1
+  local newx=$((piece_x + x ))
+  [[ $newx -ge 0 ]] && [[ $newx -lt $width ]] && move $x 0
+}
+turn() {
+  :
+}
+
+move() {
+    local x=$1
+    local y=$2
+    forpiece setfield empty
+    ((piece_x+=$x))
+    ((piece_y+=$y))
+    forpiece setfield falling
+  }
+
+land() { #executed when piece lands
+  forpiece setfield base
+  spawn
+}
+
+spawn() {
+  piece_x=$((width/2))
+  piece_y=0
+}
+connects() { #todo: adjust for 4-block
+  [[ $piece_y -ge $((height - 2 )) ]] && return 0
+  [[ $(getfield $piece_x $((piece_y+1)) ) == 'base' ]] && return 0
+  return 1
+}
+
+build_map() {
+ for (( y=0; y < $height; y++ )); do
+    for (( x=0; x < $width; x++ )); do
+      set -x
+      map[$x+1 + ($y+1) * $xsize]=${rep[$(getfield $x $y)]}
+      set +x
+    done
+  done
+}
+
+game_setup() {
+  for (( y=0; y < $height; y++ )); do
+    for (( x=0; x < $width; x++ )); do
+      setfield $x $y empty
+    done 
+  done
+  for (( y=0; y < $height; y++ )); do
+    for (( x=0; x < $width; x++ )); do
+      echo $x $y $(getfield $x $y) >&2
+    done
+  done
+  #draw map borders
+  :
+}
+
+worldtick() {
+  fall
+  build_map
+}
+
+action() {
+  local playerinput=$1
+  case $playerinput in
+    q) close ;;
+    a) slide -1 ;;
+    d) slide 1 ;;
+    s) fall ;;
+  esac
+}
+
+engine
