@@ -6,11 +6,11 @@ declare -i gametime=0
 declare -i nexttick=${EPOCHREALTIME/[.,]/}
 declare -i tickrate=100000
 declare -i waittime=$tickrate
+home="$(tput home)"
 
 tick() {
   nexttick+=$tickrate
   worldtick
-  draw
   waittime=$tickrate
 }
 
@@ -34,17 +34,16 @@ setpos() {
   map[$j + $i * $xsize]=${symbol:1:1}
 }
 
-
-
 draw() {
-  tput home
+  line=''
+  p=0
   for ((i=0; i < $ysize; i++ )); do
-    line=''
     for ((j=0; j < $xsize; j++ )); do
-      line+="${map[ $j + $i * $xsize ]}"
+      line+="${map[p++]}"
     done
-    echo "$line"
+    line+=$'\n'
   done
+  echo "$home$line"
 }
 
 close() {
@@ -73,14 +72,17 @@ engine() {
   setup
   while true; do
     waittime=$nexttick-${EPOCHREALTIME/[.,]/}
-    [[ $waittime -le 0 ]] && tick
+    TIMEFORMAT=$'tick:\treal\t%3lR\tuser\t%3lU\tsys\t%3lS'
+    [[ $waittime -le 0 ]] && time tick
     waittime=$nexttick-${EPOCHREALTIME/[.,]/}
-    if [[ $waittime -gt 0 ]]; then
-      printf -v readwait '0.%06d\n' $waittime
+    if [[ $waittime -gt 100 ]]; then
+      printf -v readwait '0.%06d' $waittime
     else
-      readwait=0
+      readwait=0.000100
     fi
-    read -s -n 1 -t $readwait input && action "$input"
+    TIMEFORMAT=$'action:\treal\t%3lR\tuser\t%3lU\tsys\t%3lS'
+    read -n 1 -t $readwait input && time action "$input"
+    $debug && echo "readwait=$readwait input=${input@Q}" >&2
   done
 }
 
