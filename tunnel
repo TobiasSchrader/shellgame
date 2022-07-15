@@ -10,7 +10,7 @@ declare -i ysize=25
 declare -i xsize=80
 declare -i pos=xsize/2
 declare -i gametick=0
-declare -i min_width=3
+declare -i min_width=7
 declare -i current_width=xsize-2
 
 declare -a left width
@@ -25,7 +25,7 @@ display() {
     for ((x=0;x<left[y];x++)) {
       map[y*xsize+x]='+'
     }
-    for ((x=width[y];x<left[y]+width[y];x++)) {
+    for ((x=left[y];x<left[y]+width[y];x++)) {
       map[y*xsize+x]=' '
     }
     for ((x=left[y]+width[y];x<xsize;x++)) {
@@ -50,16 +50,15 @@ display() {
 }
 
 action() {
-  local playerinput=$1
-  case $playerinput in
-    q)
-      close
-      ;;
-    h)
+  case $1 in
+    j)
       ((pos--))
       ;;
     l)
       ((pos++))
+      ;;
+    q)
+      close
       ;;
   esac
   display
@@ -70,8 +69,13 @@ worldtick() {
     left[y]=${left[y-1]}
     width[y]=${width[y-1]}
   }
-  [[ $current_width -gt $min_width ]] && ((current_width--))
+  (( current_width>min_width && current_width--))
   width[0]=$current_width
+  ((random=RANDOM%5))
+  echo "random=$random ${left[0]} ${width[0]}" >&2
+  ((random<2 && left[0]>1 && left[0]--))
+  ((random>2 && xsize-width[0]-left[0] > 2 && left[0]++))
+  echo "--------- ${left[0]} ${width[0]}" >&2
   display
   ((gametick++))
 }
