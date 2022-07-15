@@ -1,0 +1,84 @@
+#!/bin/bash
+
+set -o nounset
+
+source engine.sh
+
+debug=true
+
+declare -i ysize=25
+declare -i xsize=80
+declare -i pos=xsize/2
+declare -i gametick=0
+declare -i min_width=3
+declare -i current_width=xsize-2
+
+declare -a left width
+
+game_setup() {
+  :
+}
+
+display() {
+  clear_map
+  for ((y=0;y<ysize;y++)) {
+    for ((x=0;x<left[y];x++)) {
+      map[y*xsize+x]='+'
+    }
+    for ((x=width[y];x<left[y]+width[y];x++)) {
+      map[y*xsize+x]=' '
+    }
+    for ((x=left[y]+width[y];x<xsize;x++)) {
+      map[y*xsize+x]='+'
+    }
+  }
+  char='*'
+  inbound=true
+  local -i max=${left[ysize-1]}+${width[ysize-1]}
+  if [[ $pos -lt ${left[ysize-1]} || $pos -ge $max ]]; then
+    char='!'
+    inbound=false
+  fi
+  map[(ysize-1)*xsize+pos]=$char
+  draw
+  $inbound || {
+    tput cnorm
+    stty echo
+    tput cup $ysize 0
+    exit 0
+  }
+}
+
+action() {
+  local playerinput=$1
+  case $playerinput in
+    q)
+      close
+      ;;
+    h)
+      ((pos--))
+      ;;
+    l)
+      ((pos++))
+      ;;
+  esac
+  display
+}
+
+worldtick() {
+  for ((y=ysize-1;y>0;y--)) {
+    left[y]=${left[y-1]}
+    width[y]=${width[y-1]}
+  }
+  [[ $current_width -gt $min_width ]] && ((current_width--))
+  width[0]=$current_width
+  display
+  ((gametick++))
+}
+
+for ((y=0;y<ysize;y++)) {
+  left[y]=1
+  width[y]=$current_width
+}
+
+engine
