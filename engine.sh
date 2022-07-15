@@ -8,9 +8,17 @@ declare -i tickrate=100000
 declare -i waittime=$tickrate
 home="$(tput home)"
 
-tick() {
+settickrate() {
+  tickrate=$1
+}
+
+declare autodraw=true
+
+
+tick() {  
   nexttick+=$tickrate
   worldtick
+  $autodraw && draw
   waittime=$tickrate
 }
 
@@ -69,6 +77,7 @@ setup() {
 }
 
 engine() {
+  [[ $# -gt 0 ]] && [[ $1 == '--noautodraw' ]] && autodraw=false ; echo "Not drawing"
   setup
   while true; do
     waittime=$nexttick-${EPOCHREALTIME/[.,]/}

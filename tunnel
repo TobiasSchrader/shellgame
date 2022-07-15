@@ -81,4 +81,4 @@ for ((y=0;y<ysize;y++)) {
   width[y]=$current_width
 }
 
-engine
+engine --autodraw

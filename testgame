@@ -21,8 +21,9 @@ shift $(( $OPTIND - 1 ))
 declare -i score=0
 declare canMove=true
 declare decrease=0
-xsize=$(tput cols)
-ysize=$(($(tput lines) - 1 ))
+xsize=10 #$(tput cols)
+ysize=10 #$(($(tput lines) - 1 ))
+declare freeze=false
 
 #declare fieldsize=$((xsize * ysize ))
 
@@ -30,6 +31,9 @@ action() {
   local playerinput=$1
   case $playerinput in
     q) close ;;
+    f) settickrate 50000 ;;
+    s) settickrate 500000 ;;
+    p) $freeze && freeze=false || freeze=true ;;
     +) chscore 1  ;;
     -) chscore -1  ;;
   esac
@@ -54,6 +58,7 @@ counteract() {
   ((decrease+=20))
   $debug && echo $decrease >&2
   [[ $decrease -ge 100 ]] && ((score-- , decrease-=100))
+  [[ $score -le -10 ]] && end
 }
 
 worldtick() {
@@ -61,6 +66,7 @@ worldtick() {
   counteract
   build_map
   canMove=true
+  $freeze || draw
 }
 
 engine
