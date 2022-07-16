@@ -30,9 +30,11 @@ declare -i tickrate=500000
 declare -i score=0
 declare -i lnum=0
 
+declare -i dim=3 #size of piece
+
 #field
-declare -i width=4
-declare -i height=4
+declare -i width=8
+declare -i height=12
 
 declare -i xsize=$width+2
 declare -i ysize=$height+3
@@ -55,12 +57,40 @@ setfield() {
 
 
 #piece
-declare -i piece_x=$((width/2))
-declare -i piece_y=0
+declare -i piece_x
+declare -i piece_y
+
+declare -a relpiece_x
+declare -a relpiece_y
+
+relpiece_x=0
+relpiece_y=0
+
+abs_x() {
+  echo $((piece_x+relpiece_x[$1]))
+}
+
+abs_y() {
+  echo $((piece_y+relpiece_y[$1]))
+}
+
+
+spawn() {
+  piece_x=$((width/2))
+  piece_y=0
+  relpiece_x[1]=1 #TODO replace with random piece choice
+  relpiece_y[1]=0
+  relpiece_x[2]=-1
+  relpiece_y[2]=0
+  forpiece setfield falling
+}
 
 forpiece() {
-  
-  $1 piece_x piece_y ${2:-''}
+  local cmd=$1
+  shift
+  for ((block=0; block < $dim; block++)); do
+    $cmd $(abs_x $block) $(abs_y $block) $@
+  done
 }
 
 fall() {
@@ -74,10 +104,22 @@ fall() {
 slide() {
   local x=$1
   local newx=$((piece_x + x ))
-  [[ $newx -ge 0 ]] && [[ $newx -lt $width ]] && move $x 0
+  for ((tile=0; tile < $dim; tile++)); do
+    rx=$((newx+relpiece_x[$tile]))
+    [[ $rx -ge 0  && $rx -lt $width ]] || return
+  done
+  move $x 0
 }
+
 turn() {
-  :
+  local tmp
+  forpiece setfield empty
+  for ((tile=0; tile < $dim; tile++)); do
+    tmp=${relpiece_x[$tile]}
+    relpiece_x[$tile]=$((-relpiece_y[$tile]))
+    relpiece_y[$tile]=$tmp
+  done
+  forpiece setfield falling
 }
 
 move() {
@@ -97,10 +139,14 @@ land() { #executed when piece lands
 
 score() {
   local lnum=0
+  local -a piecelines=()
   [[ piece_y -eq 0 ]] && gameover;
-  forpiece linecomplete
-  ((score+=$lnum))
-  lnum=0
+  for ((tile=0; tile < $dim; tile++)); do
+    piecelines[$(abs_y $tile)]=true
+  done
+  for line in ${!piecelines[@]}; do
+    ${piecelines[$line]} && linecomplete $line && ((++lnum)) && ((score+=$lnum))
+  done
 }
 
 gameover() {
@@ -108,12 +154,11 @@ gameover() {
 }
 
 linecomplete() {
-  local y=$2
+  local y=$1
   for (( x=0; x<$width; x++));do
     [[ $(getfield $x $y) == base ]] || return 1
   done
   downshift $y
-  ((lnum++))
 }
 
 downshift() {
@@ -125,14 +170,11 @@ downshift() {
   done
 }
 
-spawn() {
-  piece_x=$((width/2))
-  piece_y=0
-  forpiece setfield falling
-}
 connects() { #todo: adjust for 4-block
-  [[ $piece_y -ge $((height - 1 )) ]] && return 0
-  [[ $(getfield $piece_x $((piece_y+1)) ) == 'base' ]] && return 0
+  for ((tile=0; tile < $dim; tile++)); do 
+    [[ $(abs_y $tile) -ge $((height - 1 )) ]] && return 0
+    [[ $(getfield $(abs_x $tile) $(($(abs_y $tile)+1)) ) == 'base' ]] && return 0
+  done
   return 1
 }
 
@@ -161,7 +203,7 @@ game_setup() {
     map[$y*$xsize]=${rep[border]}
     map[$xsize - 1 + $xsize*$y]=${rep[border]}
   done
-
+  spawn
 }
 
 worldtick() {
@@ -176,6 +218,7 @@ action() {
     a) slide -1 ;;
     d) slide 1 ;;
     s) fall ;;
+    w) turn ;;
   esac
 }
 
