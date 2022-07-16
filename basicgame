@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# Author: Tobias Schrader
+
+
+declare -A controls=()
+# divide by 4 for y coordinates
+controls[w]=-4 # up
+controls[s]=4 # down
+controls[a]=-1 # right
+controls[d]=1 # left
+controls[0]=0 # stand
+
+declare -i gametime=0
+declare -i lasttick=0
+declare -i xsize=50
+declare -i ysize=30
+
+
+declare -a enemies=()
+declare -A xpos=()
+declare -A ypos=()
+declare -A canMove=(false)
+declare -a field=()
+
+build_field() {
+  for ((i = 0; i < ysize; i++ )); do
+    for ((j = 0; j < xsize; j++ )); do
+      boundarytest && { field[$i]="${field[$i]}#" ; continue ; }
+      field[$i]="${field[$i]} "
+    done
+    echo
+  done
+}
+  
+
+playerMove() {
+  [[ $1 == 'q' ]] && gameover
+  $canMove || return
+  xpos=$(( xpos+(controls[$1]%4) ))
+  ypos=$(( ypos+(controls[$1]/4) ))
+  canMove=false
+}
+
+tick() {
+  ((gametime++))
+  lasttick=${EPOCHREALTIME/./}
+  for e in "${enemies[@]}"; do
+    attack $e
+  done
+ draw
+ canMove=true
+} 
+
+draw() {
+  clear
+  draw_field
+  #state "${xpos[test_enemy]}"
+  # draw character
+  tput cup $ypos $xpos
+  echo -n \@
+  #draw enemies
+  for e in "${enemies[@]}"; do
+    tput cup ${ypos[$e]} ${xpos[$e]}
+    echo -n \!
+  done
+}
+
+boundarytest() {
+  x=$1; y=$2
+  [[ $x -eq 0 ||  $x -eq $xsize || $y -eq 0 || $y -eq $ysize ]] && return 0
+  return 1
+}
+
+draw_field() {
+  tput cup 0 0
+  printf '%s\n' "${field[@]}"
+}
+
+gameover() {
+  clear
+  draw_field
+  tput cup $((ysize/2)) $((xsize/2-5))
+  echo "GAME OVER"
+  tput cup $(($ysize+1)) 0
+  tput cnorm
+  exit
+}
+
+attack() {
+  ((canMove[$1]+=40))
+  [[ ${canMove[$1]} -ge 100 ]]  && { target $1; ((canMove[$1]+=-100)); }
+  [[ $xpos == ${xpos[$1]} ]] && [[ $ypos == ${ypos[$1]} ]] && gameover
+}
+
+target() {
+  ((xpos[$1]++))
+}
+
+state() {
+  tput cup 0 0
+  echo -n "$gametime" "$1"
+}
+
+
+######## MAIN #######
+gameover
+clear
+tput civis
+e=test_enemy
+enemies+=("$e")
+xpos=5
+ypos=5
+xpos[$e]=0
+ypos[$e]=6
+
+while true; do
+  [[ $((${EPOCHREALTIME/./} - lasttick)) -gt 100000 ]] && tick
+  read -s -n 1 -t 0.1 input && playerMove $input
+done
