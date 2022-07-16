@@ -107,6 +107,7 @@ slide() {
   for ((tile=0; tile < $dim; tile++)); do
     rx=$((newx+relpiece_x[$tile]))
     [[ $rx -ge 0  && $rx -lt $width ]] || return
+    [[ $(getfield $rx $piece_y) == 'base' ]] && return
   done
   move $x 0
 }
